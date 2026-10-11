@@ -1,0 +1,12 @@
+$mvpRoot = Split-Path -Parent $PSScriptRoot
+$mvpMsvc = Join-Path $mvpRoot '.tools/msvc/Contents/VC/Tools/MSVC/14.44.35207'
+$mvpSdk = Join-Path $mvpRoot '.tools/winsdk'
+$mvpSdkHeaders = Join-Path $mvpRoot '.tools/winsdk-headers/c/Include/10.0.28000.0'
+$env:PATH = "$mvpRoot\.tools\anchor\bin;$mvpRoot\.tools\agave\solana-release\bin;$mvpMsvc\bin\Hostx64\x64;$env:PATH"
+$env:LIB = "$mvpMsvc\lib\x64;$mvpSdk\c\um\x64;$mvpSdk\c\ucrt\x64"
+$env:INCLUDE = "$mvpMsvc\include;$mvpSdkHeaders\ucrt;$mvpSdkHeaders\um;$mvpSdkHeaders\shared"
+$env:CC = Join-Path $env:USERPROFILE '.cache/solana/v1.57/platform-tools/llvm/bin/clang-cl.exe'
+$env:CXX = $env:CC
+$env:CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER = Join-Path $mvpMsvc 'bin/Hostx64/x64/link.exe'
+$env:CARGO_TARGET_DIR = Join-Path $env:LOCALAPPDATA 'profile-rewards-build'
+$env:RUSTUP_TOOLCHAIN = 'stable-x86_64-pc-windows-msvc'

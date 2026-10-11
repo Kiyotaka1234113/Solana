@@ -1,0 +1,21 @@
+{
+  "name": "counter-tests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "ts-node tests/counter.ts",
+    "test:mvp": "ts-node tests/mvp.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.30.1",
+    "@solana/spl-token": "^0.4.15",
+    "@solana/web3.js": "^1.95.0"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  }
+}

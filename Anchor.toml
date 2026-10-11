@@ -1,0 +1,21 @@
+[toolchain]
+
+[features]
+seeds = false
+skip-lint = false
+
+[programs.devnet]
+counter = "9AdsXdjHeX6smzMa7GFHx5EuswhVKkJ39f5QNr7rj3vM"
+profile = "v2ViaeEaxvCQfutQzic1VyEVqXTxqJLLsFt2MsiJMHb"
+profile_rewards = "Cf2wLYFB3PQKJKDBuszFoAjdvKE8vjaziFLM2TkGZ62T"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "./devnet-keypair.json"
+
+[scripts]
+test = "npx ts-node tests/profile.ts"
+mvp = "npx ts-node tests/mvp.ts"
