@@ -201,5 +201,5 @@ for work in data["works"]:
     text = markdown_work(work)
     (ROOT / work["file"]).write_text(text, encoding="utf-8")
     markdown.extend([text, ""])
-(ROOT / "README.md").write_text("\n".join(markdown), encoding="utf-8")
+(ROOT / "README.md").write_text("\n".join(markdown).rstrip() + "\n", encoding="utf-8")
 print(f"Created {docx_file.name}, README.md, and {len(data['works'])} individual reports")
