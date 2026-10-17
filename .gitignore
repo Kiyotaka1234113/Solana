@@ -5,3 +5,5 @@ programs/*/target/
 .local/
 test-ledger/
 *-keypair.json
+/fresh-wallet.json
+/reports/solana/.qa/
