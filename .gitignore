@@ -1,9 +1,7 @@
-node_modules/
 target/
-programs/*/target/
-.tools/
-.local/
-test-ledger/
+node_modules/
+.anchor/
 *-keypair.json
-/fresh-wallet.json
-/reports/solana/.qa/
+*keypair*.json
+.env
+*.log
