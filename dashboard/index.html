@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Solana Devnet Dashboard</title>
+<style>
+  body { background:#121212; color:#e0e0e0; font-family:Arial,Helvetica,sans-serif; margin:0; padding:1rem; }
+  .container { max-width:960px; margin:auto; }
+  h1 { text-align:center; }
+  input, button { padding:0.5rem; margin:0.2rem; border:none; border-radius:4px; }
+  button { background:#0066ff; color:#fff; cursor:pointer; }
+  button:hover { background:#0044cc; }
+  .section { margin-top:1.5rem; padding:1rem; background:#1e1e1e; border-radius:6px; }
+  table { width:100%; border-collapse:collapse; margin-top:0.5rem; }
+  th, td { padding:0.4rem; border:1px solid #333; text-align:left; }
+  a { color:#66aaff; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Solana Devnet Dashboard</h1>
+  <div>
+    <input type="text" id="walletInput" placeholder="Wallet address" size="55" />
+    <button id="refreshBtn">Refresh</button>
+    <button id="sampleBtn">AZbAiZSDkRwXdKkSteQNwGVoXX1tSD9iRYNPQiYesNze</button>
+  </div>
+  <div class="section" id="balanceSection"><h2>Balance (SOL)</h2><pre id="balanceInfo">Loading...</pre></div>
+  <div class="section" id="tokensSection"><h2>SPL Tokens</h2><table id="tokensTable"><thead><tr><th>Mint</th><th>Balance</th><th>Decimals</th></tr></thead><tbody></tbody></table></div>
+  <div class="section" id="txSection"><h2>Recent Transactions</h2><table id="txTable"><thead><tr><th>Signature</th><th>Slot</th><th>Time</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+  <div class="section" id="programSection"><h2>defi_swap Program Activity</h2>
+    <pre id="programInfo">Loading...</pre>
+    <h3>Pool Reserves</h3>
+    <pre id="poolInfo"></pre>
+    <h3>Recent Program Transactions</h3>
+    <table id="programTxTable"><thead><tr><th>Signature</th><th>Slot</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+<script>
+const RPC_URL = '/rpc';
+const DEFAULT_WALLET = 'F8VD2NvjMKSSDqRSDpTYzL2wrVyeDzt3zEDweSqmQqcM';
+const SAMPLE_WALLET = 'AZbAiZSDkRwXdKkSteQNwGVoXX1tSD9iRYNPQiYesNze';
+const PROGRAM_ID = '9tXLf1ZEbjycpb3E2vcBqbfe6DAnLYuxpWjtYBDaLZtM';
+const POOL_PDA = 'BqAKfyF2K61DxvfBLMi9WPjYuem6Ni53YMPm2j11bbvE';
+const VAULT_A = 'BESX1w1g9doqwXP6rPpyDFk5v8V4b7sD72bLCSurfM4F';
+const VAULT_B = 'H3RQb293vviJsYmfbvjJGxe1DNpUaz88qnNdkMSJgkcp';
+
+function rpc(method, params) {
+  return fetch(RPC_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({jsonrpc:'2.0',id:1,method,params})
+  }).then(r=>r.json());
+}
+
+async function refresh() {
+  const wallet = document.getElementById('walletInput').value.trim() || DEFAULT_WALLET;
+  const [balRes, epochRes] = await Promise.all([
+    rpc('getBalance',[wallet]),
+    rpc('getEpochInfo',[])
+  ]);
+  const lamports = balRes.result.value;
+  const sol = lamports/1e9;
+  document.getElementById('balanceInfo').textContent = `SOL: ${sol}\nLamports: ${lamports}\nEpoch: ${epochRes.result.epoch}\nSlot: ${epochRes.result.absoluteSlot}`;
+  const tokenRes = await rpc('getTokenAccountsByOwner',[wallet,{programId:'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'},{encoding:'jsonParsed'}]);
+  const tbody = document.querySelector('#tokensTable tbody');
+  tbody.innerHTML='';
+  tokenRes.result.value.forEach(acc=>{
+    const mint = acc.account.data.parsed.info.mint;
+    const amount = acc.account.data.parsed.info.tokenAmount.uiAmountString;
+    const decimals = acc.account.data.parsed.info.tokenAmount.decimals;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${mint}</td><td>${amount}</td><td>${decimals}</td>`;
+    tbody.appendChild(tr);
+  });
+  const sigRes = await rpc('getSignaturesForAddress',[wallet, {limit:10}]);
+  const txTbody=document.querySelector('#txTable tbody');
+  txTbody.innerHTML='';
+  for(const s of sigRes.result) {
+    const status = s.confirmationStatus || 'unknown';
+    const time = s.blockTime ? new Date(s.blockTime*1000).toLocaleString() : '---';
+    const link=`https://explorer.solana.com/tx/${s.signature}?cluster=devnet`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><a href="${link}" target="_blank">${s.signature}</a></td><td>${s.slot}</td><td>${time}</td><td>${status}</td>`;
+    txTbody.appendChild(tr);
+  }
+  document.getElementById('programInfo').textContent = `Program ID: ${PROGRAM_ID}\nPool PDA: ${POOL_PDA}`;
+  const [vaultARes, vaultBRes] = await Promise.all([
+    rpc('getTokenAccountBalance',[VAULT_A]),
+    rpc('getTokenAccountBalance',[VAULT_B])
+  ]);
+  const aBal = Number(vaultARes.result.value.amount);
+  const bBal = Number(vaultBRes.result.value.amount);
+  const rate = aBal===0 ? 0 : bBal/aBal;
+  document.getElementById('poolInfo').textContent = `Vault A: ${aBal}\nVault B: ${bBal}\nCurrent price (B/A): ${rate}`;
+  const progTxRes = await rpc('getSignaturesForAddress',[PROGRAM_ID,{limit:10}]);
+  const progTbody=document.querySelector('#programTxTable tbody');
+  progTbody.innerHTML='';
+  progTxRes.result.forEach(s=>{
+    const link=`https://explorer.solana.com/tx/${s.signature}?cluster=devnet`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><a href="${link}" target="_blank">${s.signature}</a></td><td>${s.slot}</td>`;
+    progTbody.appendChild(tr);
+  });
+}
+
+document.getElementById('refreshBtn').addEventListener('click',()=>refresh());
+document.getElementById('sampleBtn').addEventListener('click',()=>{document.getElementById('walletInput').value=SAMPLE_WALLET; refresh();});
+// initial load
+document.getElementById('walletInput').value=DEFAULT_WALLET;
+refresh();
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 [workspace]
-members = ["programs/profile_rewards"]
+members = ["programs/profile_rewards", "programs/defi_swap", "programs/composable_router", "programs/security_vault", "programs/stablecoin_pay"]
 exclude = ["programs/counter", "programs/profile"]
 resolver = "2"
 

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SolFlow – DeFi &amp; Stablecoin Hub</title>
+  <style>
+    :root {
+      --bg:#0b0f19;
+      --card:#111827;
+      --border:#1f2937;
+      --text:#e5e7eb;
+      --accent-start:#9945FF;
+      --accent-end:#14F195;
+      --success:#10b981;
+      --warning:#fbbf24;
+      --danger:#ef4444;
+    }
+    body {margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;}
+    h1 {text-align:center;margin:1rem 0;}
+    .tabs {display:flex;justify-content:center;margin-bottom:1rem;}
+    .tab {padding:0.6rem 1.2rem;margin:0 0.2rem;cursor:pointer;background:var(--card);border:1px solid var(--border);border-radius:4px;}
+    .tab.active {background:linear-gradient(90deg,var(--accent-start),var(--accent-end));color:#fff;}
+    .panel {display:none;padding:0 1rem;}
+    .panel.active {display:block;}
+    .grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;}
+    .card {background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1rem;}
+    .card h3 {margin-top:0;}
+    .badge {display:inline-block;padding:0.2rem 0.6rem;border-radius:4px;font-size:0.8rem;}
+    .badge.success{background:var(--success);color:#fff;}
+    .badge.warning{background:var(--warning);color:#000;}
+    .badge.danger{background:var(--danger);color:#fff;}
+    input,button,select {margin:0.3rem 0;padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:4px;background:#1f2937;color:var(--text);}
+    button {cursor:pointer;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));color:#fff;}
+    button:disabled{opacity:0.6;cursor:not-allowed;}
+    .progress {height:8px;background:#1f2937;border-radius:4px;overflow:hidden;margin-top:0.4rem;}
+    .progress div {height:100%;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));}
+    table {width:100%;border-collapse:collapse;}
+    th,td {padding:0.4rem 0.6rem;border:1px solid var(--border);text-align:left;}
+    th {background:#1f2937;}
+    a {color:#60a5fa;}
+    .spinner {border:4px solid #1f2937;border-top:4px solid var(--accent-start);border-radius:50%;width:24px;height:24px;animation:spin 1s linear infinite;display:inline-block;margin-left:0.5rem;}
+    @keyframes spin {to{transform:rotate(360deg);}}
+    .code {background:#111827;padding:0.5rem;border-radius:4px;font-family:monospace;white-space:pre-wrap;}
+  </style>
+</head>
+<body>
+<h1>SolFlow Demo Dashboard</h1>
+<div class="tabs" id="tabs">
+  <div class="tab active" data-panel="overview">Overview &amp; RPC</div>
+  <div class="tab" data-panel="ai-swap">AI Swap &amp; CPI Router</div>
+  <div class="tab" data-panel="stablecoin">Stablecoin Pay</div>
+  <div class="tab" data-panel="security">Security Audit</div>
+</div>
+<div class="panel active" id="overview">
+  <div style="margin-bottom:0.5rem;">
+    Wallet: <input id="walletInput" type="text" size="58" value="F8VD2NvjMKSSDqRSDpTYzL2wrVyeDzt3zEDweSqmQqcM"/> 
+    <button id="switchBtn">Switch to AZbAiZ…</button>
+    <button id="refreshBtn">Refresh</button>
+  </div>
+  <div class="grid" id="kpiCards"></div>
+  <h3>SPL Tokens in Wallet</h3>
+  <table id="tokenTable"><thead><tr><th>Mint</th><th>Symbol</th><th>Balance (raw)</th></tr></thead><tbody></tbody></table>
+  <h3>Deployed Programs</h3>
+  <div class="grid" id="programCards"></div>
+  <h3>Recent Transactions</h3>
+  <table id="txTable"><thead><tr><th>Signature</th><th>Slot</th><th>Status</th></tr></thead><tbody></tbody></table>
+</div>
+<div class="panel" id="ai-swap">
+  <div class="grid" id="reserveCards"></div>
+  <div class="card">
+    <h3>Swap Input (Token A)</h3>
+    <input id="swapAmt" type="number" placeholder="Amount (tokens)" value="1"/>
+    <div>
+      <button class="quickAmt" data-amt="1">1</button>
+      <button class="quickAmt" data-amt="10">10</button>
+      <button class="quickAmt" data-amt="50">50</button>
+      <button class="quickAmt" data-amt="100">100</button>
+    </div>
+    <button id="analyzeBtn">Analyze Risk (ML)</button>
+    <div id="riskResult" style="margin-top:0.5rem;"></div>
+    <button id="executeSwapBtn" disabled>Execute Live CPI Swap on Devnet</button>
+    <div id="swapResult" style="margin-top:0.5rem;"></div>
+  </div>
+</div>
+<div class="panel" id="stablecoin">
+  <div class="card">
+    <h3>Create mUSDC Invoice</h3>
+    <label>Amount (mUSDC): <input id="invoiceAmt" type="number" value="10"/></label>
+    <button id="createInvoiceBtn">Create Invoice on Devnet</button>
+    <div id="invoiceResult" style="margin-top:0.5rem;"></div>
+  </div>
+  <div class="card" style="margin-top:1rem;">
+    <h3>Example Verified Invoice</h3>
+    <p>Invoice PDA: <code>2MEURRSLvnSibStvvKciu7RpKMFC7xSJh7FS2pqQgm6e</code></p>
+    <p>Protection: <code>AlreadyPaid (0x1771)</code></p>
+  </div>
+</div>
+<div class="panel" id="security">
+  <div class="card">
+    <h3>Missing Signer Check – Exploit vs Patch</h3>
+    <p><strong>Program ID:</strong> <a href="https://explorer.solana.com/address/CnBm8DNdWJ5WfTj92czXWm9PHad8fseYeWgBZ3535qkP?cluster=devnet" target="_blank">Security Vault</a></p>
+    <div class="grid">
+      <div class="card"><strong>Before Patch</strong><br/>Tx: <a href="https://explorer.solana.com/tx/2ax4tRLgeTza3vRSuzjCXvcC7Y9SrnbquXXvn3x3Fy3kUemGeYUzVUBfRQeU6Vtty2zW1GgSmcwCyG7jXZXvReES?cluster=devnet" target="_blank">2ax4tR…</a><br/>Result: UncheckedAccount ➜ stole 5,000,000 lamports</div>
+      <div class="card"><strong>After Patch</strong><br/>Tx: <a href="https://explorer.solana.com/tx/3DvUED45c9xkZqF8vhnQFZsnx2vZqSCHDuxqE8kpXB9KcNeCd2PHDxWceJiUJVvhNx7sYekKfaUxHSeNH38LrNLB?cluster=devnet" target="_blank">3DvUED…</a><br/>Result: AccountNotSigner (3010) – attack blocked</div>
+    </div>
+    <h4 style="margin-top:0.5rem;">Diff (excerpt)</h4>
+    <pre class="code">/// CHECK: INTENTIONALLY VULNERABLE - missing Signer check!
+pub authority: UncheckedAccount<'info>,
++ pub authority: Signer<'info>,</pre>
+  </div>
+  <div class="card" style="margin-top:1rem;">
+    <h3>Security Checklist for All Programs</h3>
+    <table>
+      <thead><tr><th>Program</th><th>Key Checks</th></tr></thead>
+      <tbody>
+        <tr><td>defi_swap</td><td>overflow protection, slippage check, mint validation, heap allocation safety</td></tr>
+        <tr><td>composable_router</td><td>CPI signer propagation, memo inclusion</td></tr>
+        <tr><td>security_vault</td><td>Signer verification added (patch)</td></tr>
+        <tr><td>stablecoin_pay</td><td>AlreadyPaid idempotency, owner constraints, invoice PDA derivation</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+  // RPC helper
+  async function rpc(method, params) {
+    const res = await fetch('https://api.devnet.solana.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message);
+    return json.result;
+  }
+
+  // Tab navigation
+  const tabs = document.getElementById('tabs');
+  tabs.addEventListener('click', e => {
+    if (e.target.classList.contains('tab')) {
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      e.target.classList.add('active');
+      const panel = e.target.dataset.panel;
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      document.getElementById(panel).classList.add('active');
+    }
+  });
+
+  // Wallet handling
+  const primary = 'F8VD2NvjMKSSDqRSDpTYzL2wrVyeDzt3zEDweSqmQqcM';
+  const alt = 'AZbAiZSDkRwXdKkSteQNwGVoXX1tSD9iRYNPQiYesNze';
+  const walletInput = document.getElementById('walletInput');
+  document.getElementById('switchBtn').onclick = () => {
+    walletInput.value = (walletInput.value===primary) ? alt : primary;
+    loadOverview();
+  };
+  document.getElementById('refreshBtn').onclick = loadOverview;
+
+  // Render program cards immediately (independent of RPC)
+  function renderProgramCards() {
+    const progDiv = document.getElementById('programCards');
+    progDiv.innerHTML = '';
+    const programs = [
+      {name:'defi_swap', id:'9tXLf1ZEbjycpb3E2vcBqbfe6DAnLYuxpWjtYBDaLZtM'},
+      {name:'composable_router', id:'9t56Ysmdii2T2fk6cnXihjW5Q1k7WCCspD7wsMFQzrB4'},
+      {name:'security_vault', id:'CnBm8DNdWJ5WfTj92czXWm9PHad8fseYeWgBZ3535qkP'},
+      {name:'stablecoin_pay', id:'8xSmfQW68bK4GzSfMk2iELyyVuPzdWEokpBHKCtrYjd9'}
+    ];
+    programs.forEach(p => {
+      const c = document.createElement('div');
+      c.className = 'card';
+      c.innerHTML = `<strong>${p.name}</strong><br/>Program ID: <a href="https://explorer.solana.com/address/${p.id}?cluster=devnet" target="_blank">${p.id}</a>`;
+      progDiv.appendChild(c);
+    });
+  }
+
+  // ------- Overview -------
+  async function loadOverview() {
+    const wallet = walletInput.value.trim();
+    const kpi = document.getElementById('kpiCards');
+    kpi.innerHTML = '';
+    const addKPI = (title, value) => kpi.appendChild(createCard(title, value));
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // SOL Balance
+    try {
+      const balanceInfo = await rpc('getBalance', [wallet]);
+      const lamports = balanceInfo.value;
+      const sol = lamports / 1e9;
+      addKPI('SOL Balance', `${sol.toFixed(4)} SOL (${lamports} lamports)`);
+    } catch (e) { console.error('getBalance error:', e); addKPI('SOL Balance', 'Error'); }
+
+    // Epoch & Slot
+    try {
+      const epochInfo = await rpc('getEpochInfo', []);
+      addKPI('Network Epoch & Slot', `Epoch ${epochInfo.epoch} / Slot ${epochInfo.absoluteSlot}`);
+    } catch (e) { console.error('getEpochInfo error:', e); addKPI('Network Epoch & Slot', 'Error'); }
+
+    // Pool Price (requires vault balances)
+    const vaultA = 'BESX1w1g9doqwXP6rPpyDFk5v8V4b7sD72bLCSurfM4F';
+    const vaultB = 'H3RQb293vviJsYmfbvjJGxe1DNpUaz88qnNdkMSJgkcp';
+    try {
+      const [balA, balB] = await Promise.all([
+        rpc('getTokenAccountBalance', [vaultA]),
+        rpc('getTokenAccountBalance', [vaultB])
+      ]);
+      const price = Number(balA.value.amount) / Number(balB.value.amount);
+      addKPI('Pool Price (A/B)', price.toFixed(4));
+    } catch (e) { console.error('Pool price error:', e); addKPI('Pool Price (A/B)', 'Error'); }
+
+    // Active Programs (static)
+    addKPI('Active Programs', '4 / 4 Deployed');
+
+    // Token table
+    const tbody = document.querySelector('#tokenTable tbody');
+    tbody.innerHTML = '';
+    try {
+      const tokenAccounts = await rpc('getTokenAccountsByOwner', [wallet, { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' }, { encoding: 'jsonParsed' }]);
+      const names = {
+        '6frqPxC5jtzSk1P3eS6xqFvTq6yY5b2ujDwtw5w2g6A1':'Mint A',
+        '3bgrYo7V5QzKiWHuwZuEnUrLpaoXaPR3FdKZR65gXKeF':'Mint B',
+        'BZQCLuDX5y9FW5Fd71LjMpTUNHcvK4P2ASgwgyYYPtN7':'mUSDC'
+      };
+      tokenAccounts.value.forEach(acc => {
+        const mint = acc.account.data.parsed.info.mint;
+        const amount = acc.account.data.parsed.info.tokenAmount.uiAmountString;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${mint}</td><td>${names[mint]||'?'}</td><td>${amount}</td>`;
+        tbody.appendChild(tr);
+      });
+    } catch (e) { console.error('Token accounts error:', e); }
+
+    // Recent transactions
+    const txBody = document.querySelector('#txTable tbody');
+    txBody.innerHTML = '';
+    try {
+      const signatures = await rpc('getSignaturesForAddress', [wallet, { limit: 8 }]);
+      signatures.forEach(sig => {
+        const status = sig.confirmationStatus === 'finalized' ? '<span class="badge success">FINAL</span>' : '<span class="badge warning">PENDING</span>';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><a href="https://explorer.solana.com/tx/${sig.signature}?cluster=devnet" target="_blank">${sig.signature.slice(0,8)}…</a></td><td>${sig.slot}</td><td>${status}</td>`;
+        txBody.appendChild(tr);
+      });
+    } catch (e) { console.error('Signatures error:', e); }
+  }
+
+  // ------- AI Swap -------
+  async function loadReserves(){
+    const vaultA='BESX1w1g9doqwXP6rPpyDFk5v8V4b7sD72bLCSurfM4F';
+    const vaultB='H3RQb293vviJsYmfbvjJGxe1DNpUaz88qnNdkMSJgkcp';
+    try{
+      const [balA, balB] = await Promise.all([
+        rpc('getTokenAccountBalance',[vaultA]),
+        rpc('getTokenAccountBalance',[vaultB])
+      ]);
+      const container=document.getElementById('reserveCards');
+      container.innerHTML='';
+      container.appendChild(createCard('Vault A Balance', balA.value.amount));
+      container.appendChild(createCard('Vault B Balance', balB.value.amount));
+      container.appendChild(createCard('Current Price (A/B)', (Number(balA.value.amount)/Number(balB.value.amount)).toFixed(4)));
+    }catch(e){ console.error(e); }
+  }
+  loadReserves();
+
+  // Quick amount buttons
+  document.querySelectorAll('.quickAmt').forEach(b=>b.onclick=()=>{document.getElementById('swapAmt').value=b.dataset.amt;});
+
+  document.getElementById('analyzeBtn').onclick=async()=>{
+    const amount=Number(document.getElementById('swapAmt').value)*1_000_000;
+    const body={amountIn:amount,aToB:true};
+    const div=document.getElementById('riskResult');
+    div.innerHTML='<span class="spinner"></span> Analyzing…';
+    try{
+      const resp=await fetch('/api/ml-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data=await resp.json();
+      const badgeClass=data.verdict==='LOW'?'success':data.verdict==='MEDIUM'?'warning':'danger';
+      div.innerHTML=`
+        <span class="badge ${badgeClass}">${data.verdict}</span>
+        <div class="progress"><div style="width:${data.riskScore}%"></div></div>
+        <p>Score: ${data.riskScore}</p>
+        <p>Expected Out: ${data.expectedOut}</p>
+        <p>Price Impact: ${data.priceImpactPct.toFixed(2)}%</p>
+        <p>Liquidity Util.: ${data.liquidityUtilPct.toFixed(2)}%</p>
+        <p>Pool Imbalance: ${data.poolImbalanceRatio.toFixed(4)}</p>`;
+      document.getElementById('executeSwapBtn').disabled=false;
+    }catch(e){ div.textContent='Error: '+e.message; }
+  };
+
+  document.getElementById('executeSwapBtn').onclick=async()=>{
+    const amount=Number(document.getElementById('swapAmt').value)*1_000_000;
+    const btn=document.getElementById('executeSwapBtn');
+    btn.disabled=true; btn.textContent='Executing…';
+    const resDiv=document.getElementById('swapResult');
+    resDiv.innerHTML='<span class="spinner"></span> Waiting…';
+    try{
+      const resp=await fetch('/api/routed-swap',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amountIn:amount,aToB:true})});
+      const data=await resp.json();
+      resDiv.innerHTML=`
+        <p>Signature: <a href="${data.explorerUrl}" target="_blank">${data.signature.slice(0,8)}…</a></p>
+        <p>Before A: ${data.beforeA}, After A: ${data.afterA}</p>
+        <p>Before B: ${data.beforeB}, After B: ${data.afterB}</p>
+        <details><summary>Show CPI logs</summary><pre class="code">${data.logs.join('\n')}</pre></details>`;
+    }catch(e){ resDiv.textContent='Error: '+e.message; }
+    btn.textContent='Execute Live CPI Swap on Devnet';
+  };
+
+  // ------- Stablecoin Pay -------
+  document.getElementById('createInvoiceBtn').onclick=async()=>{
+    const amount=Number(document.getElementById('invoiceAmt').value)*1_000_000;
+    const invoiceId=Math.floor(Date.now()/1000);
+    const out=document.getElementById('invoiceResult');
+    out.innerHTML='<span class="spinner"></span> Creating…';
+    try{
+      const resp=await fetch('/api/create-invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({invoiceId,amount})});
+      const data=await resp.json();
+      const qr=`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(data.solanaPayUri)}`;
+      out.innerHTML=`
+        <p>Invoice PDA: ${data.invoicePda}</p>
+        <p>Tx: <a href="${data.explorerUrl}" target="_blank">${data.signature.slice(0,8)}…</a></p>
+        <p>Solana Pay URI: <input id="uriCopy" type="text" value="${data.solanaPayUri}" readonly style="width:100%;"/></p>
+        <button onclick="navigator.clipboard.writeText('${data.solanaPayUri}')">Copy URI</button>
+        <img src="${qr}" alt="QR Code" style="margin-top:0.5rem;"/>
+      `;
+    }catch(e){ out.textContent='Error: '+e.message; }
+  };
+
+  function createCard(title, value){
+    const d=document.createElement('div'); d.className='card'; d.innerHTML=`<h3>${title}</h3><p>${value}</p>`; return d;
+  }
+
+  // Ensure DOM is ready before initial load
+  document.addEventListener('DOMContentLoaded', () => {
+    renderProgramCards();
+    loadOverview();
+  });
+</script>
+</body>
+</html>

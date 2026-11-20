@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount};
 
-declare_id!("Cf2wLYFB3PQKJKDBuszFoAjdvKE8vjaziFLM2TkGZ62T");
+declare_id!("EaJEwhW3ZBvw45cTrsDxtcbvdKyrKtJ6UqioNVPrges6");
 
 pub const REWARD_MINT: Pubkey = pubkey!("ER68vjbbokgZpF8JDvFgHqMD1RUUzDUjrLg3ChgacDD2");
 pub const REWARD_DECIMALS: u8 = 6;
